@@ -1,6 +1,6 @@
 # eBayExportListings
 
-eBayExportListings is a Python script that retrieves active eBay listings using the eBay API and prints them in a readable XML format.
+eBayExportListings is a Python script that retrieves active eBay listings using the eBay API and prints them in a readable XML format or outputs them to a CSV file.
 
 ## Table of Contents
 
@@ -26,6 +26,7 @@ eBayExportListings is a Python script that retrieves active eBay listings using 
    ```
 
 3. Install the required packages:
+
    ```sh
    pip install -r requirements.txt
    ```
@@ -33,6 +34,7 @@ eBayExportListings is a Python script that retrieves active eBay listings using 
 ## Configuration
 
 1. Create a `config.ini` file in the root directory of the project with the following content:
+
    ```ini
    [eBayAPI]
    IAF_TOKEN = your_ebay_api_token
@@ -45,6 +47,8 @@ Run the script to fetch and print active eBay listings:
 ```sh
 python main.py
 ```
+
+This will generate a csv file with all your listings.
 
 ## License
 
