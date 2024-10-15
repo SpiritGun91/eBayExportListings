@@ -134,6 +134,13 @@ def extract_color_from_description(description):
     colors = color_pattern.findall(description)
     return ', '.join(set(colors)) if colors else "N/A"
 
+def extract_size_from_text(text):
+    # Enhanced regex to extract size from text
+    size_pattern = re.compile(r'\b(?:Size|Men\'s Size|Women\'s Size|M Size|W Size|Size:|Size-|Size\.|Small|Medium|Large|Extra Large|XS|S|M|L|XL|XXL|XXXL)\s*(\d+(\.\d+)?|XS|S|M|L|XL|XXL|XXXL|Small|Medium|Large|Extra Large)\b', re.IGNORECASE)
+    matches = size_pattern.findall(text)
+    sizes = [match[0] for match in matches]
+    return ', '.join(sizes) if sizes else "N/A"
+
 async def main():
     listings = await get_ebay_listings()
     print(f"Total listings fetched: {len(listings)}")
@@ -154,56 +161,84 @@ async def main():
 
         with open('ebay_listings.csv', mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow(["Item ID", "Title", "Current Price", "Quantity", "Time Left", "Watch Count", "Description", "Image URLs", "Category", "Condition", "Colors"])
+            writer.writerow(["Item ID", "Title", "Current Price", "Quantity", "Time Left", "Watch Count", "Description", "Image URLs", "Category", "Condition", "Colors", "Brand", "Model", "Size"])
 
-            for item, item_details in zip(listings, item_details_list):
-                if item_details is not None:
-                    description = item_details.find(".//{urn:ebay:apis:eBLBaseComponents}Description")
-                    if description is not None:
-                        description_html = html.fromstring(description.text)
-                        description_text = description_html.text_content()
-                    else:
-                        description_text = "N/A"
+            with open('item_details.txt', mode='w', encoding='utf-8') as debug_file:
+                for item, item_details in zip(listings, item_details_list):
+                    if item_details is not None:
+                        description = item_details.find(".//{urn:ebay:apis:eBLBaseComponents}Description")
+                        if description is not None:
+                            description_html = html.fromstring(description.text)
+                            description_text = description_html.text_content()
+                        else:
+                            description_text = "N/A"
 
-                    picture_urls = item_details.findall(".//{urn:ebay:apis:eBLBaseComponents}PictureURL")
-                    picture_urls_text = ', '.join([pic.text for pic in picture_urls]) if picture_urls else "N/A"
+                        picture_urls = item_details.findall(".//{urn:ebay:apis:eBLBaseComponents}PictureURL")
+                        picture_urls_text = ', '.join([pic.text for pic in picture_urls]) if picture_urls else "N/A"
 
-                    category = item_details.find(".//{urn:ebay:apis:eBLBaseComponents}PrimaryCategory")
-                    category_text = category.find(".//{urn:ebay:apis:eBLBaseComponents}CategoryName").text if category is not None else "N/A"
+                        category = item_details.find(".//{urn:ebay:apis:eBLBaseComponents}PrimaryCategory")
+                        category_text = category.find(".//{urn:ebay:apis:eBLBaseComponents}CategoryName").text if category is not None else "N/A"
 
-                    condition = item_details.find(".//{urn:ebay:apis:eBLBaseComponents}ConditionDisplayName")
-                    condition_text = condition.text if condition is not None else "N/A"
+                        condition = item_details.find(".//{urn:ebay:apis:eBLBaseComponents}ConditionDisplayName")
+                        condition_text = condition.text if condition is not None else "N/A"
 
-                    # Extract color details
-                    colors = item_details.findall(".//{urn:ebay:apis:eBLBaseComponents}VariationSpecifics//{urn:ebay:apis:eBLBaseComponents}NameValueList")
-                    if not colors:
-                        colors = item_details.findall(".//{urn:ebay:apis:eBLBaseComponents}ItemSpecifics//{urn:ebay:apis:eBLBaseComponents}NameValueList")
-                    color_text = ', '.join([color.find(".//{urn:ebay:apis:eBLBaseComponents}Value").text for color in colors if color.find(".//{urn:ebay:apis:eBLBaseComponents}Name").text == "Color"]) if colors else extract_color_from_description(description_text)
+                        # Extract color details
+                        colors = item_details.findall(".//{urn:ebay:apis:eBLBaseComponents}VariationSpecifics//{urn:ebay:apis:eBLBaseComponents}NameValueList")
+                        if not colors:
+                            colors = item_details.findall(".//{urn:ebay:apis:eBLBaseComponents}ItemSpecifics//{urn:ebay:apis:eBLBaseComponents}NameValueList")
+                        color_text = ', '.join([color.find(".//{urn:ebay:apis:eBLBaseComponents}Value").text for color in colors if color.find(".//{urn:ebay:apis:eBLBaseComponents}Name").text == "Color"]) if colors else extract_color_from_description(description_text)
 
-                    # Debugging output for color extraction
-                    print(f"Item ID: {item.find('{urn:ebay:apis:eBLBaseComponents}ItemID').text}, Colors: {color_text}")
-                    for color in colors:
-                        name = color.find(".//{urn:ebay:apis:eBLBaseComponents}Name").text
-                        value = color.find(".//{urn:ebay:apis:eBLBaseComponents}Value").text
-                        print(f"  Name: {name}, Value: {value}")
+                        # Extract brand, model, and size
+                        brand_text = "N/A"
+                        model_text = "N/A"
+                        size_text = extract_size_from_text(title)  # Extract size from title
+                        if size_text == "N/A":
+                            size_text = extract_size_from_text(description_text)  # Extract size from description if not found in title
 
-                    # Print the entire XML structure for debugging
-                    print(f"XML structure for item {item.find('{urn:ebay:apis:eBLBaseComponents}ItemID').text}:")
-                    print(etree.tostring(item_details, pretty_print=True).decode())
+                        # Debugging: Print title, description, and extracted size
+                        debug_file.write(f"Title: {title}\n")
+                        debug_file.write(f"Description: {description_text}\n")
+                        debug_file.write(f"Extracted Size: {size_text}\n")
 
-                    writer.writerow([
-                        item.find("{urn:ebay:apis:eBLBaseComponents}ItemID").text,
-                        item.find("{urn:ebay:apis:eBLBaseComponents}Title").text,
-                        item.find(".//{urn:ebay:apis:eBLBaseComponents}CurrentPrice").text,
-                        item.find("{urn:ebay:apis:eBLBaseComponents}Quantity").text,
-                        item.find("{urn:ebay:apis:eBLBaseComponents}TimeLeft").text,
-                        item.find("{urn:ebay:apis:eBLBaseComponents}WatchCount").text if item.find("{urn:ebay:apis:eBLBaseComponents}WatchCount") is not None else "N/A",
-                        description_text,
-                        picture_urls_text,
-                        category_text,
-                        condition_text,
-                        color_text
-                    ])
+                        # Check ProductListingDetails for Brand
+                        product_listing_details = item_details.find(".//{urn:ebay:apis:eBLBaseComponents}ProductListingDetails")
+                        if product_listing_details is not None:
+                            brand_mpn = product_listing_details.find(".//{urn:ebay:apis:eBLBaseComponents}BrandMPN")
+                            if brand_mpn is not None:
+                                brand = brand_mpn.find(".//{urn:ebay:apis:eBLBaseComponents}Brand")
+                                if brand is not None:
+                                    brand_text = brand.text
+
+                        # Check ItemSpecifics for Model
+                        item_specifics = item_details.find(".//{urn:ebay:apis:eBLBaseComponents}ItemSpecifics")
+                        if item_specifics is not None:
+                            debug_file.write(f"Item Specifics for {item_id}:\n{etree.tostring(item_specifics, pretty_print=True).decode()}\n")  # Debugging line
+                            for specific in item_specifics.findall(".//{urn:ebay:apis:eBLBaseComponents}NameValueList"):
+                                name = specific.find(".//{urn:ebay:apis:eBLBaseComponents}Name").text
+                                value = specific.find(".//{urn:ebay:apis:eBLBaseComponents}Value").text
+                                debug_file.write(f"Specific: {name} = {value}\n")  # Debugging line
+                                if name == "Model":
+                                    model_text = value
+
+                        # Additional debugging: Print the entire item details
+                        debug_file.write(f"Full item details for {item_id}:\n{etree.tostring(item_details, pretty_print=True).decode()}\n")
+
+                        writer.writerow([
+                            item.find("{urn:ebay:apis:eBLBaseComponents}ItemID").text,
+                            item.find("{urn:ebay:apis:eBLBaseComponents}Title").text,
+                            f"{float(item.find('.//{urn:ebay:apis:eBLBaseComponents}CurrentPrice').text):.2f}",  # Format price to 2 decimal places
+                            item.find("{urn:ebay:apis:eBLBaseComponents}Quantity").text,
+                            item.find("{urn:ebay:apis:eBLBaseComponents}TimeLeft").text,
+                            item.find("{urn:ebay:apis:eBLBaseComponents}WatchCount").text if item.find("{urn:ebay:apis:eBLBaseComponents}WatchCount") is not None else "N/A",
+                            description_text,
+                            picture_urls_text,
+                            category_text,
+                            condition_text,
+                            color_text,
+                            brand_text,
+                            model_text,
+                            size_text
+                        ])
 
 # Run the main function
 asyncio.run(main())

@@ -1,5 +1,3 @@
-# eBayExtract
-
 eBayExtract is a Python script that retrieves active eBay listings using the eBay API and prints them in a readable XML format or outputs them to a CSV file.
 
 ## Table of Contents
@@ -8,12 +6,18 @@ eBayExtract is a Python script that retrieves active eBay listings using the eBa
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Filtering Listings](#filtering-listings)
+- [Exporting Listings](#exporting-listings)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## Installation
 
-1. Clone the repository
+1. Clone the repository:
+
+   ```sh
+   git clone https://github.com/yourusername/eBayExportListings.git
+   cd eBayExportListings
+   ```
 
 2. Create a virtual environment and activate it:
 
@@ -54,6 +58,16 @@ python filter.py
 ```
 
 This will generate a `filtered_ebay_listings.csv` file containing only the listings with item IDs specified in `items.txt`.
+
+## Mapping Listings
+
+To map the listings with additional data, run the `map.py` script:
+
+```sh
+python map.py
+```
+
+This will generate an `amazon_product_listings.csv` file containing the mapped eBay listings.
 
 ## Contributing
 

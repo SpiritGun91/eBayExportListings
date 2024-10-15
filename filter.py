@@ -6,7 +6,7 @@ with open('items.txt', 'r') as file:
 
 # Read ebay_listings.csv and filter rows
 filtered_rows = []
-with open('ebay_listings.csv', 'r', encoding='utf-8') as csvfile:
+with open('ebay_listings_no_model_size.csv', 'r', encoding='utf-8') as csvfile:
     reader = csv.reader(csvfile)
     header = next(reader)
     filtered_rows.append(header)
