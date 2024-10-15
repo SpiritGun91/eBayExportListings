@@ -13,12 +13,7 @@ eBayExtract is a Python script that retrieves active eBay listings using the eBa
 
 ## Installation
 
-1. Clone the repository:
-
-   ```sh
-   git clone https://github.com/yourusername/eBayExtract.git
-   cd eBayExtract
-   ```
+1. Clone the repository
 
 2. Create a virtual environment and activate it:
 
