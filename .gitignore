@@ -126,3 +126,6 @@ config.ini
 
 # CSV files
 *.csv
+
+# Text files
+*.txt

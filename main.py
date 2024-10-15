@@ -2,12 +2,17 @@ import asyncio
 import aiohttp
 import configparser
 import csv
+import re
 from lxml import etree, html
 
 # Read the IAF_TOKEN from config.ini
 config = configparser.ConfigParser()
 config.read('config.ini')
-IAF_TOKEN = config['eBayAPI']['IAF_TOKEN']
+
+try:
+    IAF_TOKEN = config['eBayAPI']['IAF_TOKEN']
+except KeyError as e:
+    raise KeyError(f"Missing configuration for {e}. Please ensure your config.ini file contains the [eBayAPI] section with the IAF_TOKEN key.")
 
 # eBay API endpoint
 EBAY_API_ENDPOINT = 'https://api.ebay.com/ws/api.dll'
@@ -123,6 +128,12 @@ async def get_item_details(session, item_id):
         print(f"Error fetching details for item {item_id}: {err}")
         return None
 
+def extract_color_from_description(description):
+    # Simple regex to find color names in the description
+    color_pattern = re.compile(r'\b(?:white|black|red|green|blue|yellow|purple|pink|orange|brown|gray|grey|cream|beige|gold|silver)\b', re.IGNORECASE)
+    colors = color_pattern.findall(description)
+    return ', '.join(set(colors)) if colors else "N/A"
+
 async def main():
     listings = await get_ebay_listings()
     print(f"Total listings fetched: {len(listings)}")
@@ -143,7 +154,7 @@ async def main():
 
         with open('ebay_listings.csv', mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow(["Item ID", "Title", "Current Price", "Quantity", "Time Left", "Watch Count", "Description", "Image URLs"])
+            writer.writerow(["Item ID", "Title", "Current Price", "Quantity", "Time Left", "Watch Count", "Description", "Image URLs", "Category", "Condition", "Colors"])
 
             for item, item_details in zip(listings, item_details_list):
                 if item_details is not None:
@@ -157,6 +168,29 @@ async def main():
                     picture_urls = item_details.findall(".//{urn:ebay:apis:eBLBaseComponents}PictureURL")
                     picture_urls_text = ', '.join([pic.text for pic in picture_urls]) if picture_urls else "N/A"
 
+                    category = item_details.find(".//{urn:ebay:apis:eBLBaseComponents}PrimaryCategory")
+                    category_text = category.find(".//{urn:ebay:apis:eBLBaseComponents}CategoryName").text if category is not None else "N/A"
+
+                    condition = item_details.find(".//{urn:ebay:apis:eBLBaseComponents}ConditionDisplayName")
+                    condition_text = condition.text if condition is not None else "N/A"
+
+                    # Extract color details
+                    colors = item_details.findall(".//{urn:ebay:apis:eBLBaseComponents}VariationSpecifics//{urn:ebay:apis:eBLBaseComponents}NameValueList")
+                    if not colors:
+                        colors = item_details.findall(".//{urn:ebay:apis:eBLBaseComponents}ItemSpecifics//{urn:ebay:apis:eBLBaseComponents}NameValueList")
+                    color_text = ', '.join([color.find(".//{urn:ebay:apis:eBLBaseComponents}Value").text for color in colors if color.find(".//{urn:ebay:apis:eBLBaseComponents}Name").text == "Color"]) if colors else extract_color_from_description(description_text)
+
+                    # Debugging output for color extraction
+                    print(f"Item ID: {item.find('{urn:ebay:apis:eBLBaseComponents}ItemID').text}, Colors: {color_text}")
+                    for color in colors:
+                        name = color.find(".//{urn:ebay:apis:eBLBaseComponents}Name").text
+                        value = color.find(".//{urn:ebay:apis:eBLBaseComponents}Value").text
+                        print(f"  Name: {name}, Value: {value}")
+
+                    # Print the entire XML structure for debugging
+                    print(f"XML structure for item {item.find('{urn:ebay:apis:eBLBaseComponents}ItemID').text}:")
+                    print(etree.tostring(item_details, pretty_print=True).decode())
+
                     writer.writerow([
                         item.find("{urn:ebay:apis:eBLBaseComponents}ItemID").text,
                         item.find("{urn:ebay:apis:eBLBaseComponents}Title").text,
@@ -165,7 +199,10 @@ async def main():
                         item.find("{urn:ebay:apis:eBLBaseComponents}TimeLeft").text,
                         item.find("{urn:ebay:apis:eBLBaseComponents}WatchCount").text if item.find("{urn:ebay:apis:eBLBaseComponents}WatchCount") is not None else "N/A",
                         description_text,
-                        picture_urls_text
+                        picture_urls_text,
+                        category_text,
+                        condition_text,
+                        color_text
                     ])
 
 # Run the main function

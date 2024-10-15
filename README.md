@@ -1,12 +1,14 @@
-# eBayExportListings
+# eBayExtract
 
-eBayExportListings is a Python script that retrieves active eBay listings using the eBay API and prints them in a readable XML format or outputs them to a CSV file.
+eBayExtract is a Python script that retrieves active eBay listings using the eBay API and prints them in a readable XML format or outputs them to a CSV file.
 
 ## Table of Contents
 
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
+- [Filtering Listings](#filtering-listings)
+- [Contributing](#contributing)
 - [License](#license)
 
 ## Installation
@@ -14,8 +16,8 @@ eBayExportListings is a Python script that retrieves active eBay listings using 
 1. Clone the repository:
 
    ```sh
-   git clone https://github.com/yourusername/eBayExportListings.git
-   cd eBayExportListings
+   git clone https://github.com/yourusername/eBayExtract.git
+   cd eBayExtract
    ```
 
 2. Create a virtual environment and activate it:
@@ -48,7 +50,25 @@ Run the script to fetch and print active eBay listings:
 python main.py
 ```
 
-This will generate a csv file with all your listings.
+## Filtering Listings
+
+To filter the listings based on item IDs specified in `items.txt`, run the `filter.py` script:
+
+```sh
+python filter.py
+```
+
+This will generate a `filtered_ebay_listings.csv` file containing only the listings with item IDs specified in `items.txt`.
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and submit a pull request.
+
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature-branch`).
+3. Commit your changes (`git commit -am 'Add new feature'`).
+4. Push to the branch (`git push origin feature-branch`).
+5. Create a new Pull Request.
 
 ## License
 
